@@ -17,6 +17,7 @@ Rails.application.routes.draw do
     member do
       get :play
       get :auto_solve
+      post :solve
     end
   end
 end

@@ -1,2 +1,58 @@
-<h1>Mazes#play</h1>
-<p>Find me in app/views/mazes/play.html.erb</p>
+<!-- app/views/mazes/play.html.erb -->
+<div class="maze-container">
+    <h1><%= @maze.name %></h1>
+    <div class="maze-info">
+        <p>Schwierigkeit: <%= '★' * @maze.difficulty.to_i %></p>
+        <p>Größe: <%= @maze.size %>x<%= @maze.size %></p>
+        <p>Erstellt von: <%= @maze.creator %></p>
+        <p>Bemerkung: <%= @maze.remark %></p>
+    </div>
+
+    <div class="game-status">
+        <div id="status-message">Bewege dich mit Pfeiltasten oder Mausklick durch das Labyrinth</div>
+        <div id="steps-counter">Schritte: 0</div>
+    </div>
+
+    <div class="maze-actions">
+        <button id="reset-game" class="btn btn-warning">Neu starten</button>
+        <button id="auto-solve" class="btn btn-primary">Auto-Lösung</button>
+        <a href="<%= mazes_path %>" class="btn btn-secondary">Zurück zur Übersicht</a>
+    </div>
+
+    <div class="maze-grid-container">
+        <div id="maze-grid" data-maze-id="<%= @maze.id %>">
+            <% @grid.each_with_index do |row, y| %>
+                <div class="maze-row">
+                    <% row.each_with_index do |cell, x| %>
+                        <div class="maze-cell <%= cell_class(cell) %>" 
+                                data-y="<%= y %>" 
+                                data-x="<%= x %>"
+                                data-type="<%= cell %>">
+                            <% if cell == 'S' %>
+                                <div class="player"></div>
+                            <% elsif cell == 'E' %>
+                                <span class="goal">🏁</span>
+                            <% end %>
+                        </div>
+                    <% end %>
+                </div>
+            <% end %>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Modal für Spielpausierung und Gewinnnachricht -->
+<div id="steps-modal" class="modal fade" tabindex="-1" aria-labelledby="stepsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="stepsModalLabel">Spiel abgeschlossen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message">Du hast das Labyrinth in x Schritten gelöst.</p>
+                <button id="resume-game" class="btn btn-primary">Spiel fortsetzen</button>
+            </div>
+        </div>
+    </div>
+</div>

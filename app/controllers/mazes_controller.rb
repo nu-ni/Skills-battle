@@ -1,38 +1,72 @@
 # app/controllers/mazes_controller.rb
 class MazesController < ApplicationController
-  before_action :set_maze, only: [:edit, :update, :destroy]
-
   def index
     @mazes = Maze.all
-    
-    # Apply filters
-    @mazes = @mazes.where(size: params[:size]) if params[:size].present?
-    @mazes = @mazes.where(difficulty: params[:difficulty]) if params[:difficulty].present?
-    @mazes = @mazes.where("DATE(created_at) = ?", params[:date]) if params[:date].present?
-    @mazes = @mazes.where("name ILIKE ?", "%#{params[:name]}%") if params[:name].present?
-    
-    @mazes = @mazes.order(created_at: :desc)
   end
 
-  def edit
-  end
-
-  def update
-    if @maze.update(maze_params)
-      redirect_to mazes_path, notice: 'Maze wurde erfolgreich aktualisiert.'
-    else
-      render :edit, status: :unprocessable_entity
-    end
-  end
-
-  def destroy
-    @maze.destroy
-    redirect_to mazes_path, notice: 'Maze wurde erfolgreich gelöscht.'
-  end
-  
   def new
     @maze = Maze.new
   end
+  
+  def show
+    @maze = Maze.find(params[:id])
+  end
+  
+  def play
+    @maze = Maze.find(params[:id])
+    @grid = @maze.data.split("\n").map(&:chars)
+    puts @grid.inspect # Debug
+  end
+
+  def solve
+    begin
+      maze = Maze.find(params[:id])
+    rescue ActiveRecord::RecordNotFound
+      return render json: { success: false, message: "Maze nicht gefunden" }, status: :not_found
+    end
+
+    data = maze.data
+  
+    # Überprüfen, ob der Body der Anfrage korrekt empfangen wird
+    body = request.body.read
+    Rails.logger.debug "Empfangener Body: #{body.inspect}"  # Überprüfe den gesamten Body
+  
+    if body.blank?
+      return render json: { success: false, message: "Leere Anfrage empfangen" }, status: :unprocessable_entity
+    end
+    
+    # Versuche, die JSON-Daten zu parsen
+    begin
+      json_params = JSON.parse(body)
+      Rails.logger.debug "Parsed JSON: #{json_params.inspect}"  # Debugging-Ausgabe
+    rescue JSON::ParserError => e
+      return render json: { success: false, message: "Fehler beim Parsen der Anfrage: #{e.message}" }, status: :unprocessable_entity
+    end
+  
+    start = json_params["start"]
+    end_pos = json_params["end"]
+    Rails.logger.debug "Start: #{start}, End: #{end_pos}"
+    
+    unless start && end_pos
+      return render json: { success: false, message: "Start- und Endpunkt müssen angegeben werden" }, status: :unprocessable_entity
+    end    
+  
+    solver = MazeSolver.new(data, start, end_pos)
+    result = solver.solve
+  
+    if result[:success]
+      render json: {
+        success: true,
+        path: result[:path],
+        solution_length: result[:solution_length]
+      }
+    else
+      render json: {
+        success: false,
+        message: result[:message]
+      }
+    end
+  end  
 
   def create
     uploaded_file = params[:maze_file]
@@ -56,9 +90,11 @@ class MazesController < ApplicationController
 
     # Labyrinth lösen
     solver = MazeSolver.new(parser.grid, parser.start_pos, parser.end_pos)
-    if solver.solve
-      path_string = solver.path.map { |y, x| "(#{y},#{x})" }.join(" -> ")
-      solution_length = solver.solution_length
+    result = solver.solve
+    
+    if result[:success]
+      path_string = result[:path].map { |y, x| "(#{y},#{x})" }.join(" -> ")
+      solution_length = result[:solution_length]
       Rails.logger.debug "Lösung gefunden mit Länge: #{solution_length}"
     else
       flash[:alert] = "Maze ist unlösbar – kein Pfad von S nach E gefunden."
@@ -86,14 +122,26 @@ class MazesController < ApplicationController
       render :new
     end
   end
-
-  private
-
-  def set_maze
+  
+  def destroy
     @maze = Maze.find(params[:id])
+    
+    if @maze.creator == session[:creator_name]
+      @maze.destroy
+      redirect_to mazes_path, notice: "Maze wurde erfolgreich gelöscht."
+    else
+      redirect_to mazes_path, alert: "Du darfst nur deine eigenen Mazes löschen."
+    end
   end
-
-  def maze_params
-    params.require(:maze).permit(:name, :size, :difficulty)
+  
+  private
+  
+  def find_position(grid, char)
+    grid.each_with_index do |row, y|
+      row.each_with_index do |cell, x|
+        return [y, x] if cell == char
+      end
+    end
+    nil
   end
 end

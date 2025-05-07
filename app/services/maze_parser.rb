@@ -1,4 +1,3 @@
-# app/services/maze_parser.rb
 class MazeParser
   ALLOWED_CHARS = ['#', '.', 'S', 'E', ' '].freeze
   MAX_SIZE = 100

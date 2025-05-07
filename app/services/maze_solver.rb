@@ -1,64 +1,83 @@
 # app/services/maze_solver.rb
 class MazeSolver
-  attr_reader :grid, :start_pos, :end_pos, :path, :solution_length
+  attr_reader :path, :solution_length
 
-  def initialize(grid, start_pos, end_pos)
-    @grid = grid
+  def initialize(maze_data, start_pos = nil, end_pos = nil)
+    @maze = parse_maze(maze_data)
+    @rows = @maze.size
+    @cols = @maze.first.size
+    @visited = Array.new(@rows) { Array.new(@cols, false) }
+    @path = []
+    @found = false
     @start_pos = start_pos
     @end_pos = end_pos
-    @path = []
-    @visited = Array.new(grid.size) { Array.new(grid[0].size, false) }
-    @solution_length = nil
   end
 
   def solve
-    # Lösche den bisherigen Pfad
-    @path = []
-    @visited = Array.new(@grid.size) { Array.new(@grid[0].size, false) }
-    
-    # Starte die rekursive Suche
-    result = find_path(@start_pos[0], @start_pos[1])
-    
-    # Setze Pfadlänge, wenn ein Pfad gefunden wurde
-    @solution_length = @path.size - 1 if result
-    
-    result
+    y, x = @start_pos || find_cell('S')
+    return { success: false, message: "Startpunkt nicht gefunden" } unless y
+
+    @end_pos ||= find_cell('E')
+    return { success: false, message: "Endpunkt nicht gefunden" } unless @end_pos
+
+    backtrack(y, x)
+
+    if @found
+      {
+        success: true,
+        path: @path,
+        solution_length: @path.length
+      }
+    else
+      {
+        success: false,
+        message: "Keine Lösung gefunden"
+      }
+    end
   end
 
   private
 
-  def find_path(y, x)
-    # Prüfe, ob Position gültig ist
-    return false if !valid_position?(y, x)
-    
-    # Prüfe, ob wir das Ziel erreicht haben
-    if [y, x] == @end_pos
-      @path << [y, x]
-      return true
-    end
-    
-    # Markiere diese Position als besucht
-    @visited[y][x] = true
-    @path << [y, x]
-    
-    # Versuche alle vier Richtungen (oben, rechts, unten, links)
-    directions = [[-1, 0], [0, 1], [1, 0], [0, -1]]
-    directions.each do |dy, dx|
-      new_y, new_x = y + dy, x + dx
-      
-      if valid_position?(new_y, new_x) && !@visited[new_y][new_x] && @grid[new_y][new_x] != '#'
-        if find_path(new_y, new_x)
-          return true
-        end
+  def parse_maze(data)
+    # Debugging: Überprüfe den Inhalt von data
+    puts "Daten vor der Verarbeitung: #{data.inspect}"
+    data.map { |line| line.to_s.chars }
+  end
+  
+  def find_cell(symbol)
+    @maze.each_with_index do |row, y|
+      row.each_with_index do |cell, x|
+        return [y, x] if cell == symbol
       end
     end
-    
-    # Backtracking: Entferne die aktuelle Position vom Pfad
+    nil
+  end
+
+  def backtrack(y, x)
+    return false if out_of_bounds?(y, x)
+    return false if @visited[y][x]
+    return false if @maze[y][x] == '#'
+
+    @visited[y][x] = true
+    @path << [y, x]
+
+    if [y, x] == @end_pos
+      @found = true
+      return true
+    end
+
+    directions = [[0,1], [1,0], [0,-1], [-1,0]]
+
+    directions.each do |dy, dx|
+      new_y, new_x = y + dy, x + dx
+      return true if backtrack(new_y, new_x)
+    end
+
     @path.pop
     false
   end
 
-  def valid_position?(y, x)
-    y >= 0 && y < @grid.size && x >= 0 && x < @grid[0].size
+  def out_of_bounds?(y, x)
+    y < 0 || y >= @rows || x < 0 || x >= @cols
   end
 end

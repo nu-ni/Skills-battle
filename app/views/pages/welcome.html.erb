@@ -1,0 +1,21 @@
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h1 class="text-center mb-4">Willkommen beim Labyrinth-Spiel</h1>
+                    <p class="text-center">Bitte gib deinen Namen ein:</p>
+
+                    <%= form_with url: set_name_path, method: :post, class: "needs-validation", novalidate: true do %>
+                        <div class="mb-3">
+                            <%= text_field_tag :creator_name, nil, class: "form-control", placeholder: "Dein Name", required: true %>
+                        </div>
+                        <div class="d-grid">
+                            <%= submit_tag "Weiter", class: "btn btn-primary" %>
+                        </div>
+                    <% end %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

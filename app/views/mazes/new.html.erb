@@ -1,38 +1,44 @@
 <h1 class="text-center my-4">Neues Maze hochladen</h1>
 
+<% if flash[:notice] %>
+    <div class="alert alert-success"><%= flash[:notice] %></div>
+<% elsif flash[:alert] %>
+    <div class="alert alert-danger"><%= flash[:alert] %></div>
+<% end %>
+
 <%= form_with model: @maze, url: mazes_path, local: true, html: { multipart: true, class: "needs-validation" } do |form| %>
-    <% if @maze.errors.any? %>
-        <div class="alert alert-danger">
-            <h4 class="alert-heading"><%= pluralize(@maze.errors.count, "Fehler") %> beim Hochladen:</h4>
-            <ul>
-                <% @maze.errors.full_messages.each do |msg| %>
-                    <li><%= msg %></li>
-                <% end %>
-            </ul>
+        <% if @maze.errors.any? %>
+                <div class="alert alert-danger">
+                        <h4 class="alert-heading"><%= pluralize(@maze.errors.count, "Fehler") %> beim Hochladen:</h4>
+                        <ul>
+                                <% @maze.errors.full_messages.each do |msg| %>
+                                        <li><%= msg %></li>
+                                <% end %>
+                        </ul>
+                </div>
+        <% end %>
+
+        <div class="mb-3">
+                <%= form.label :name, "Maze Name", class: "form-label" %>
+                <%= form.text_field :name, class: "form-control" %>
         </div>
-    <% end %>
 
-    <div class="mb-3">
-        <%= form.label :name, "Maze Name", class: "form-label" %>
-        <%= form.text_field :name, class: "form-control" %>
-    </div>
+        <div class="mb-3">
+                <%= form.label :maze_file, "Maze Datei (.txt)", class: "form-label" %>
+                <%= file_field_tag :maze_file, class: "form-control", required: true %>
+        </div>
 
-    <div class="mb-3">
-        <%= form.label :maze_file, "Maze Datei (.txt)", class: "form-label" %>
-        <%= file_field_tag :maze_file, class: "form-control", required: true %>
-    </div>
+        <div class="mb-3">
+                <%= form.label :difficulty, "Schwierigkeit (1–5)", class: "form-label" %>
+                <%= form.number_field :difficulty, in: 1..5, step: 1, class: "form-control" %>
+        </div>
 
-    <div class="mb-3">
-        <%= form.label :difficulty, "Schwierigkeit (1–5)", class: "form-label" %>
-        <%= form.number_field :difficulty, in: 1..5, step: 1, class: "form-control" %>
-    </div>
+        <div class="mb-3">
+                <%= form.label :remark, "Bemerkung", class: "form-label" %>
+                <%= form.text_area :remark, class: "form-control", rows: 3 %>
+        </div>
 
-    <div class="mb-3">
-        <%= form.label :remark, "Bemerkung", class: "form-label" %>
-        <%= form.text_area :remark, class: "form-control", rows: 3 %>
-    </div>
-
-    <div class="d-grid">
-        <%= form.submit "Maze hochladen", class: "btn btn-primary btn-block" %>
-    </div>
+        <div class="d-grid">
+                <%= form.submit "Maze hochladen", class: "btn btn-primary btn-block" %>
+        </div>
 <% end %>
